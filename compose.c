@@ -134,7 +134,7 @@ enum HeaderField
 {
   HDR_FROM = 0, ///< "From:" field
   HDR_TO,       ///< "To:" field
-  HDR_CC,       ///< "Cc:" field
+  HDR_CC = HDR_TO + 2, ///< "Cc:" field
   HDR_BCC,      ///< "Bcc:" field
   HDR_SUBJECT,  ///< "Subject:" field
   HDR_REPLYTO,  ///< "Reply-To:" field
@@ -167,6 +167,7 @@ static const char *const Prompts[] = {
   N_("From: "),
   /* L10N: Compose menu field.  May not want to translate. */
   N_("To: "),
+  NULL,
   /* L10N: Compose menu field.  May not want to translate. */
   N_("Cc: "),
   /* L10N: Compose menu field.  May not want to translate. */
@@ -292,6 +293,8 @@ static void init_header_padding(void)
   for (int i = 0; i < HDR_ATTACH_TITLE; i++)
   {
     if (i == HDR_CRYPTINFO)
+      continue;
+    if (!Prompts[i])
       continue;
     calc_header_width_padding(i, _(Prompts[i]), true);
   }
@@ -642,6 +645,11 @@ static void draw_envelope_addr(int line, struct AddressList *al, struct ComposeR
                        _(Prompts[line]));
   mutt_curses_set_color(MT_COLOR_NORMAL);
   mutt_paddstr(W, buf);
+  size_t len = strlen(buf);
+  if (len > W)
+  {
+    mutt_window_mvprintw(rd->envelope, line + 1, HeaderPadding[line], buf + W);
+  }
 }
 
 /**
@@ -740,6 +748,11 @@ static void edit_address_list(int line, struct AddressList *al, struct ComposeRe
   mutt_addrlist_write(al, buf, sizeof(buf), true);
   mutt_window_move(rd->envelope, line, HDR_XOFFSET);
   mutt_paddstr(W, buf);
+  size_t len = strlen(buf);
+  if (len > W)
+  {
+    mutt_window_mvprintw(rd->envelope, line + 1, HeaderPadding[line], buf + W);
+  }
 }
 
 /**
@@ -1136,7 +1149,7 @@ int mutt_compose_menu(struct Email *e, struct Buffer *fcc, struct Email *e_cur, 
 
   struct MuttWindow *envelope =
       mutt_window_new(MUTT_WIN_ORIENT_VERTICAL, MUTT_WIN_SIZE_FIXED,
-                      HDR_ATTACH_TITLE - 1, MUTT_WIN_SIZE_UNLIMITED);
+                      HDR_ATTACH_TITLE, MUTT_WIN_SIZE_UNLIMITED);
   envelope->type = WT_PAGER;
 
   struct MuttWindow *abar = mutt_window_new(
